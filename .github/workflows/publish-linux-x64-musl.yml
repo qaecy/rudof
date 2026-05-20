@@ -41,7 +41,7 @@ jobs:
             -w /workspace/node \
             rust:1-alpine \
             sh -c 'apk add --no-cache nodejs npm musl-dev python3 make g++ git \
-              && npm install --ignore-scripts \
+              && npm install \
               && ./node_modules/.bin/napi build --platform --release'
 
       - uses: actions/setup-node@v4
@@ -52,7 +52,7 @@ jobs:
       - name: Prepare npm platform package
         working-directory: node
         run: |
-          npm install --ignore-scripts
+          npm install
           ./node_modules/.bin/napi prepublish -t npm
 
       - name: Publish @qaecy/rudof-linux-x64-musl
