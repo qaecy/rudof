@@ -7,15 +7,12 @@ on:
       - 'v*'
 
 jobs:
-  build-and-publish:
-    # ubuntu-latest is native linux/amd64 — no QEMU needed.
-    # Docker is pre-installed; we use rust:1-alpine inside a step so that
-    # actions/checkout can run normally on the host before the container build.
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Cache cargo registry (shared with Docker via volume)
+      - name: Cache cargo registry
         uses: actions/cache@v4
         with:
           path: |
@@ -44,25 +41,39 @@ jobs:
               && npm install \
               && ./node_modules/.bin/napi build --platform --release'
 
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rudof-linux-x64-musl
+          path: node/@qaecy/rudof.linux-x64-musl.node
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
 
+      - name: Download binary artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: rudof-linux-x64-musl
+          path: binary
+
       - name: Assemble and publish @qaecy/rudof-linux-x64-musl
         run: |
-          BINARY="${{ github.workspace }}/node/@qaecy/rudof.linux-x64-musl.node"
-
-          if [ ! -f "$BINARY" ]; then
-            echo "ERROR: binary not found at $BINARY" && exit 1
-          fi
-
+          BINARY="binary/rudof.linux-x64-musl.node"
           VERSION=$(node -e "console.log(require('./node/package.json').version)")
-          PKG_DIR="${{ github.workspace }}/node/npm/linux-x64-musl"
+          PKG_DIR="pkg"
           mkdir -p "$PKG_DIR/@qaecy"
           cp "$BINARY" "$PKG_DIR/@qaecy/rudof.linux-x64-musl.node"
 
-          cat > "$PKG_DIR/package.json" <<EOF
+          cat > "$PKG_DIR/package.json" << PKGJSON
           {
             "name": "@qaecy/rudof-linux-x64-musl",
             "version": "$VERSION",
@@ -73,7 +84,7 @@ jobs:
             "files": ["@qaecy/rudof.linux-x64-musl.node"],
             "license": "MIT OR Apache-2.0"
           }
-          EOF
+          PKGJSON
 
           cd "$PKG_DIR"
           npm publish --access public
