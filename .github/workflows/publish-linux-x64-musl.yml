@@ -8,16 +8,14 @@ on:
 
 jobs:
   build-and-publish:
+    # ubuntu-latest is native linux/amd64 — no QEMU needed.
+    # Docker is pre-installed; we use rust:1-alpine inside a step so that
+    # actions/checkout can run normally on the host before the container build.
     runs-on: ubuntu-latest
-    container:
-      image: rust:1-alpine
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install build dependencies
-        run: apk add --no-cache nodejs npm musl-dev python3 make g++ git
-
-      - name: Cache cargo registry
+      - name: Cache cargo registry (shared with Docker via volume)
         uses: actions/cache@v4
         with:
           path: |
@@ -33,17 +31,29 @@ jobs:
           key: target-linux-x64-musl-${{ hashFiles('Cargo.lock') }}
           restore-keys: target-linux-x64-musl-
 
-      - name: Install napi-rs CLI
-        working-directory: node
-        run: npm install --ignore-scripts
+      - name: Build linux-x64-musl binary inside Alpine container
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/workspace" \
+            -v "$HOME/.cargo/registry:/root/.cargo/registry" \
+            -v "$HOME/.cargo/git:/root/.cargo/git" \
+            -v "${{ github.workspace }}/target:/workspace/target" \
+            -w /workspace/node \
+            rust:1-alpine \
+            sh -c 'apk add --no-cache nodejs npm musl-dev python3 make g++ git \
+              && npm install --ignore-scripts \
+              && ./node_modules/.bin/napi build --platform --release'
 
-      - name: Build linux-x64-musl binary
-        working-directory: node
-        run: ./node_modules/.bin/napi build --platform --release
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Prepare npm platform package
         working-directory: node
-        run: ./node_modules/.bin/napi prepublish -t npm
+        run: |
+          npm install --ignore-scripts
+          ./node_modules/.bin/napi prepublish -t npm
 
       - name: Publish @qaecy/rudof-linux-x64-musl
         working-directory: node/npm/@qaecy/rudof-linux-x64-musl
