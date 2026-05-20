@@ -1,0 +1,61 @@
+{
+  "name": "@qaecy/rudof",
+  "version": "0.3.1",
+  "description": "Node.js bindings for Rudof — RDF, ShEx, SHACL, SPARQL in Rust",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "license": "MIT OR Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/qaecy/rudof",
+    "directory": "node"
+  },
+  "keywords": [
+    "rdf",
+    "shacl",
+    "shex",
+    "sparql",
+    "linked-data",
+    "semantic-web"
+  ],
+  "napi": {
+    "name": "@qaecy/rudof",
+    "triples": {
+      "defaults": true,
+      "additional": [
+        "x86_64-unknown-linux-musl",
+        "aarch64-unknown-linux-gnu",
+        "aarch64-unknown-linux-musl",
+        "aarch64-apple-darwin"
+      ]
+    }
+  },
+  "scripts": {
+    "build": "napi build --platform --release",
+    "build:debug": "napi build --platform",
+    "build:linux-musl": "napi build --platform --release --zig --target x86_64-unknown-linux-musl",
+    "publish:linux-musl": "npm run build:linux-musl && napi prepublish -t npm && (cd npm/@qaecy/rudof-linux-x64-musl && npm publish --access public)",
+    "prepublishOnly": "napi prepublish -t npm",
+    "publish:npm": "npm run build && npm publish --access public",
+    "deploy": "npm run build && npm pack && mv qaecy-rudof-*.tgz ../../data/binaries/"
+  },
+  "devDependencies": {
+    "@napi-rs/cli": "^2.18.0"
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "*.node",
+    "@qaecy/",
+    "README.md"
+  ],
+  "optionalDependencies": {
+    "@qaecy/rudof-win32-x64-msvc": "0.3.1",
+    "@qaecy/rudof-darwin-x64": "0.3.1",
+    "@qaecy/rudof-linux-x64-gnu": "0.3.1",
+    "@qaecy/rudof-linux-x64-musl": "0.3.1",
+    "@qaecy/rudof-linux-arm64-gnu": "0.3.1",
+    "@qaecy/rudof-linux-arm64-musl": "0.3.1",
+    "@qaecy/rudof-darwin-arm64": "0.3.1"
+  }
+}

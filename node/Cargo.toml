@@ -1,0 +1,23 @@
+[package]
+name = "rudof_node"
+version.workspace = true
+publish = false
+license = "MIT OR Apache-2.0"
+description = "Node.js bindings for Rudof"
+repository = "https://github.com/rudof-project/rudof"
+homepage = "https://rudof-project.github.io/rudof"
+keywords = ["rdf", "linked-data", "semantic-web", "shex", "shacl"]
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib"]
+
+[build-dependencies]
+napi-build.workspace = true
+
+[dependencies]
+napi.workspace = true
+napi-derive.workspace = true
+rudof_lib.workspace = true
+rudof_generate.workspace = true
+tokio.workspace = true
