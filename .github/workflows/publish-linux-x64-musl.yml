@@ -49,14 +49,33 @@ jobs:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Prepare npm platform package
-        working-directory: node
+      - name: Assemble and publish @qaecy/rudof-linux-x64-musl
         run: |
-          npm install
-          ./node_modules/.bin/napi prepublish -t npm
+          BINARY="${{ github.workspace }}/node/@qaecy/rudof.linux-x64-musl.node"
 
-      - name: Publish @qaecy/rudof-linux-x64-musl
-        working-directory: node/npm/@qaecy/rudof-linux-x64-musl
-        run: npm publish --access public
+          if [ ! -f "$BINARY" ]; then
+            echo "ERROR: binary not found at $BINARY" && exit 1
+          fi
+
+          VERSION=$(node -e "console.log(require('./node/package.json').version)")
+          PKG_DIR="${{ github.workspace }}/node/npm/linux-x64-musl"
+          mkdir -p "$PKG_DIR/@qaecy"
+          cp "$BINARY" "$PKG_DIR/@qaecy/rudof.linux-x64-musl.node"
+
+          cat > "$PKG_DIR/package.json" <<EOF
+          {
+            "name": "@qaecy/rudof-linux-x64-musl",
+            "version": "$VERSION",
+            "os": ["linux"],
+            "cpu": ["x64"],
+            "libc": ["musl"],
+            "main": "@qaecy/rudof.linux-x64-musl.node",
+            "files": ["@qaecy/rudof.linux-x64-musl.node"],
+            "license": "MIT OR Apache-2.0"
+          }
+          EOF
+
+          cd "$PKG_DIR"
+          npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
